@@ -1,0 +1,28 @@
+---
+- name: Delete Openshift Bastion, Masters, Infra and Node Instances
+  hosts: localhost
+  gather_facts: no
+  tasks:
+
+  - name: Delete Bastion Host
+    os_server:
+      cloud: openshift
+      state: absent
+      name: bastion-host
+      wait: no
+
+  - name: Delete Master Host
+    os_server:
+      cloud: openshift
+      state: absent
+      name: master-{{ item }}
+      wait: no
+    with_sequence: count={{ master_count }}
+
+  - name: Delete Nodes Hosts
+    os_server:
+      cloud: openshift
+      state: absent
+      name: node-{{ item }}
+      wait: no
+    with_sequence: count={{ node_count }}

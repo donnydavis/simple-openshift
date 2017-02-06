@@ -1,0 +1,30 @@
+---
+- name: Create Openshift Networks, Subnets and Routers
+  hosts: localhost
+  gather_facts: no
+  tasks:
+
+  - name: Create Openshift Network
+    os_network:
+      cloud: openshift
+      state: present
+      name: shift-net
+
+  - name: Create Openshift Subnet
+    os_subnet:
+      cloud: openshift
+      state: present
+      network_name: shift-net
+      name: shift-subnet
+      cidr: "{{ shift_subnet }}"
+      dns_nameservers: "{{ dns_servers }}"
+      gateway_ip: "{{ shift_gateway }}"
+
+  - name: Create Edge Router
+    os_router:
+      cloud: openshift
+      name: shift-edge
+      state: present
+      network: Public
+      interfaces:
+        - shift-subnet

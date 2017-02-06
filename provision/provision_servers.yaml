@@ -1,0 +1,43 @@
+---
+- name: Create Openshift Bastion, Masters, Infra and Node Instances
+  hosts: localhost
+  gather_facts: no
+  tasks:
+
+  - name: Creating Bastion Host
+    os_server:
+      cloud: openshift
+      state: present
+      name: bastion-host
+      image: centos-cloud
+      key_name: "{{ ssh_keyname }}"
+      flavor: "{{ bastion_size }}"
+      network: shift-net
+      security_groups: bastion
+      auto_ip: yes
+
+  - name: Creating Master Host
+    os_server:
+      cloud: openshift
+      state: present
+      name: master-{{ item }}
+      image: centos-cloud
+      key_name:  ansible_key
+      flavor: "{{ master_size }}"
+      network: shift-net
+      security_groups: master
+      auto_ip: yes
+    with_sequence: count={{ master_count }}
+
+  - name: Creating Node Host
+    os_server:
+      cloud: openshift
+      state: present
+      name: node-{{ item }}
+      image: centos-cloud
+      key_name:  ansible_key
+      flavor: "{{ node_size }}"
+      network: shift-net
+      security_groups: node
+      auto_ip: no
+    with_sequence: count={{ node_count }}

@@ -1,0 +1,27 @@
+---
+- name: Provision Openshift
+  hosts: localhost
+  gather_facts: no
+  tasks:
+
+    - name: Create Directory for SSH keys
+      file:
+        path: ssh
+        state: directory
+        mode: 0755
+        
+    - name: Create ssh key
+      shell: ssh-keygen -b 2048 -t rsa -f ssh/id_rsa -q -N ""
+      args:
+        creates: ssh/id_rsa
+
+    - name: Add key to Openstack
+      os_keypair:
+        cloud: openshift
+        name: ansible_key
+        state: present
+        public_key_file: ssh/id_rsa.pub
+- include: provision/provision_networks.yaml
+- include: provision/provision_security_group_rules.yaml
+- include: provision/provision_servers.yaml
+- include: provision/setup_bastion.yaml

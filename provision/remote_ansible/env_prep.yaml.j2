@@ -1,0 +1,39 @@
+---
+- name: Prep Servers for Openshift
+  hosts: all
+  user: {{ instance_login }}
+  become: yes
+  gather_facts: no
+  tasks:
+
+  - name: Install NetworkManager Package
+    yum:
+      name: NetworkManager
+      state: present
+    retries: 5
+    delay: 10
+
+  - name: start NetworkManager service
+    service:
+      name: NetworkManager
+      enabled: yes
+      state: started
+
+  - name: Install Docker Package
+    yum:
+      name: docker
+      state: present
+
+  - name: stop docker service
+    service:
+      name: docker
+      enabled: yes
+      state: stopped
+
+
+  - name: Copy in /etc/hosts template
+    template:
+      src: /etc/hosts
+      dest: /etc/hosts
+      owner: root
+      group: root

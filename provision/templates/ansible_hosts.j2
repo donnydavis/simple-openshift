@@ -1,0 +1,48 @@
+[OSEv3:children]
+masters
+nodes
+
+# Set variables common for all OSEv3 hosts
+[OSEv3:vars]
+# SSH user, this user should allow ssh based auth without requiring a password
+ansible_ssh_user={{ instance_login }}
+
+# If ansible_ssh_user is not root, ansible_sudo must be set to true
+ansible_become=true
+
+deployment_type={{ deployment_type }}
+
+openshift_master_identity_providers=[{'name': '{{ os_bastion_host.ansible_facts.openstack_servers.0.name }}.{{ domain }}', 'challenge': 'true', 'login': 'true', 'kind': 'LDAPPasswordIdentityProvider', 'attributes': {'id': ['uid'], 'email': ['mail'], 'name': ['cn'], 'preferredUsername': ['uid']}, 'bindDN': 'uid={{ bind_user }},cn=sysaccounts,cn=etc,{{ base_dn }}', 'bindPassword': '{{ bind_password }}', 'ca': '', 'insecure': 'true', 'url': 'ldap://{{ os_bastion_host.ansible_facts.openstack_servers.0.name }}.{{ domain }}:389/cn=users,cn=accounts,{{ base_dn }}?uid'}]
+
+
+openshift_master_default_subdomain="{{ apps_subdomain }}.{{ domain }}"
+
+openshift_clock_enabled=true
+
+# Configure the multi-tenant SDN plugin (default is 'redhat/openshift-ovs-subnet')
+os_sdn_network_plugin_name='redhat/openshift-ovs-multitenant'
+openshift_hosted_router_selector='region=infra'
+openshift_hosted_registry_selector='region=infra'
+openshift_hosted_router_replicas={{ master_count }}
+
+#Openstack
+#openshift_hosted_registry_storage_kind=openstack
+#openshift_hosted_registry_storage_access_modes=['ReadWriteOnce']
+#openshift_hosted_registry_storage_openstack_filesystem=ext4
+#openshift_hosted_registry_storage_openstack_volumeID=
+#openshift_hosted_registry_storage_volume_size={{ registry_size }}Gi
+
+# host group for masters
+[masters]
+{% for servers in os_masters.ansible_facts.openstack_servers %}
+{{ servers.name }}.{{ domain }}
+{% endfor %}
+
+# host group for nodes, includes region info
+[nodes]
+{% for servers in os_masters.ansible_facts.openstack_servers %}
+{{ servers.name }}.{{ domain }} openshift_node_labels="{'region': 'infra', 'zone': 'default'}" openshift_schedulable=true
+{% endfor %}
+{% for servers in os_nodes.ansible_facts.openstack_servers %}
+{{ servers.name }}.{{ domain }} openshift_node_labels="{'region': 'primary', 'zone': 'production'}"
+{% endfor %}

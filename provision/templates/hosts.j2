@@ -1,0 +1,14 @@
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+
+{% for servers in os_bastion_host.ansible_facts.openstack_servers %}
+{{ servers.private_v4 }} {{ servers.name }}.{{ domain }} {{ servers.name }}
+{% endfor %}
+
+{% for servers in os_masters.ansible_facts.openstack_servers %}
+{{ servers.private_v4 }} {{ servers.name }}.{{ domain }} {{ servers.name }}
+{% endfor %}
+
+{% for servers in os_nodes.ansible_facts.openstack_servers %}
+{{ servers.private_v4 }} {{ servers.name }}.{{ domain }} {{ servers.name }}
+{% endfor %}

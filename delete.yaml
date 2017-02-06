@@ -1,0 +1,24 @@
+---
+- name: Provision Openshift
+  hosts: localhost
+  gather_facts: no
+  tasks:
+    
+    - name: Remove SSH key
+      file:
+        path: ssh/{{ item }}
+        state: absent
+      with_items:
+        - id_rsa
+        - id_rsa.pub
+      ignore_errors: yes
+    - name: Remove key from Openstack
+      os_keypair:
+        cloud: openshift
+        name: ansible_key
+        state: absent
+      ignore_errors: yes
+
+- include: deprovision/deprovision_servers.yaml
+- include: deprovision/deprovision_networks.yaml
+- include: deprovision/deprovision_security_group_rules.yaml

@@ -1,0 +1,8 @@
+---
+- name: Prep and Provision Openshift
+  hosts: all
+  gather_facts: no
+  tasks:
+
+- include: env_prep.yaml
+- include: openshift-ansible/playbooks/byo/config.yml

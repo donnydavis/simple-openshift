@@ -1,0 +1,74 @@
+---
+- name: Create Security Groups and Rules
+  hosts: localhost
+  gather_facts: no
+  tasks:
+
+  - name: Create Master Security Group
+    os_security_group:
+      cloud: openshift
+      state: present
+      name: master
+
+  - name: Create Node Security Group
+    os_security_group:
+      cloud: openshift
+      state: present
+      name: node
+
+  - name: Create Bastion Security Group
+    os_security_group:
+      cloud: openshift
+      state: present
+      name: bastion
+
+  - name: Master Security Group Rules
+    os_security_group_rule:
+      cloud: openshift
+      state: present
+      security_group: master
+      protocol: "{{ item.proto }}"
+      port_range_min: "{{ item.port }}"
+      port_range_max: "{{ item.port }}"
+      remote_ip_prefix: "{{ item.prefix }}"
+    with_items:
+      - { port: '8053', proto: 'tcp', prefix: '0.0.0.0/0' }
+      - { port: '8053', proto: 'udp', prefix: '0.0.0.0/0' }
+      - { port: '1936', proto: 'tcp', prefix: '0.0.0.0/0' }
+      - { port: '4001', proto: 'tcp', prefix: '{{ shift_subnet }}' }
+      - { port: '4789', proto: 'udp', prefix: '{{ shift_subnet }}' }
+      - { port: '80', proto: 'tcp', prefix: '0.0.0.0/0' }
+      - { port: '443', proto: 'tcp', prefix: '0.0.0.0/0' }
+      - { port: '8443', proto: 'tcp', prefix: '0.0.0.0/0' }
+      - { port: '22', proto: 'tcp', prefix: '0.0.0.0/0' }
+
+  - name: Node Security Group Rules
+    os_security_group_rule:
+      cloud: openshift
+      state: present
+      security_group: node
+      protocol: "{{ item.proto }}"
+      port_range_min: "{{ item.port }}"
+      port_range_max: "{{ item.port }}"
+      remote_ip_prefix: "{{ item.prefix }}"
+    with_items:
+      - { port: '4789', proto: 'udp', prefix: '{{ shift_subnet }}' }
+      - { port: '10250', proto: 'tcp', prefix: '0.0.0.0/0' }
+      - { port: '22', proto: 'tcp', prefix: '0.0.0.0/0' }
+
+  - name: Bastion Security Group Rules
+    os_security_group_rule:
+      cloud: openshift
+      state: present
+      security_group: bastion
+      protocol: "{{ item.proto }}"
+      port_range_min: "{{ item.port }}"
+      port_range_max: "{{ item.port }}"
+      remote_ip_prefix: "{{ item.prefix }}"
+    with_items:
+      - { port: '389', proto: 'tcp', prefix: '0.0.0.0/0' }
+      - { port: '53', proto: 'udp', prefix: '0.0.0.0/0' }
+      - { port: '53', proto: 'tcp', prefix: '0.0.0.0/0' }
+      - { port: '80', proto: 'tcp', prefix: '0.0.0.0/0' }
+      - { port: '443', proto: 'tcp', prefix: '0.0.0.0/0' }
+      - { port: '22', proto: 'tcp', prefix: '0.0.0.0/0' }

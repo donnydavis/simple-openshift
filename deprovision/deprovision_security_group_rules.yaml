@@ -1,0 +1,23 @@
+---
+- name: Delete Security Groups and Rules
+  hosts: localhost
+  gather_facts: no
+  tasks:
+
+  - name: Delete Master Security Group
+    os_security_group:
+      cloud: openshift
+      state: absent
+      name: master
+
+  - name: Delete Node Security Group
+    os_security_group:
+      cloud: openshift
+      state: absent
+      name: node
+
+  - name: Delete Bastion Security Group
+    os_security_group:
+      cloud: openshift
+      state: absent
+      name: bastion

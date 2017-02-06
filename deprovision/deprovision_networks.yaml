@@ -1,0 +1,23 @@
+---
+- name: Delete Openshift Networks, Subnets and Routers
+  hosts: localhost
+  gather_facts: no
+  tasks:
+
+  - name: Delete Edge Router
+    os_router:
+      cloud: openshift
+      name: shift-edge
+      state: absent
+
+  - name: Delete Openshift Subnet
+    os_subnet:
+      cloud: openshift
+      state: absent
+      name: shift-subnet
+
+  - name: Delete Openshift Network
+    os_network:
+      cloud: openshift
+      state: absent
+      name: shift-net

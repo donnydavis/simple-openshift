@@ -1,0 +1,22 @@
+ssh_keyname: precision
+deployment_type: origin
+instance_login: centos
+apps_subdomain: apps
+directory_admin_password: REDhat1!
+kerberos_admin_password: REDhat1!
+domain: fortnebula.com
+base_dn: dc=fortnebula,dc=com
+bind_user: search
+bind_password: e47c520e69c60001a02b507da8461791
+bastion_size: m1.medium
+node_count: 1
+node_size: m1.xlarge
+master_count: 1
+master_size: m1.xlarge
+shift_subnet: 192.168.100.0/24
+shift_gateway: 192.168.100.1
+dns_servers:
+  - 8.8.8.8
+  - 8.8.4.4
+registry_size: 50
+openshift_version: 1.4

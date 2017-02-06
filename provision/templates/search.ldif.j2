@@ -1,0 +1,8 @@
+dn: uid={{ bind_user }},cn=sysaccounts,cn=etc,{{ base_dn }}
+changetype: add
+objectclass: account
+objectclass: simplesecurityobject
+uid: search
+userPassword: {{ bind_password }}
+passwordExpirationTime: 20380119031407Z
+nsIdleTimeout: 0

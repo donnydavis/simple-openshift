@@ -1,0 +1,199 @@
+---
+- name: Setup the Bastion Host
+  hosts: localhost
+  gather_facts: no
+  tasks:
+
+  - name: Get Master info from Openstack
+    os_server_facts:
+      cloud: openshift
+      server: master-*
+    register: os_masters
+
+  - name: Get Node info from Openstack
+    os_server_facts:
+      cloud: openshift
+      server: node-*
+    register: os_nodes
+
+  - name: Gather facts from Openstack
+    os_server_facts:
+      cloud: openshift
+      server: bastion-host
+    register: os_bastion_host
+
+  - name: Build Ansible Hosts Template to copy
+    template:
+      src: templates/ansible_hosts.j2
+      dest: files/ansible_hosts.complete
+
+  - name: Build Hosts Template to copy
+    template:
+      src: templates/hosts.j2
+      dest: files/hosts.complete
+
+  - debug:
+      msg: Adding "{{ os_bastion_host.ansible_facts.openstack_servers.0.public_v4 }}" to the host list
+
+  - name: Add new instances to host group
+    add_host: name={{ openstack_servers.0.public_v4 }} groupname=bastion_host
+
+  - name: Wait for Bastion to be available via SSH
+    local_action: wait_for port=22 host={{ os_bastion_host.ansible_facts.openstack_servers.0.public_v4 }}
+
+- hosts: bastion_host
+  user: "{{ instance_login }}"
+  become: yes
+  gather_facts: yes
+  vars:
+    master_hosts: master-[1:{{ master_count }}]
+    node_hosts: node-[1:{{ node_count }}]
+  tasks:
+
+  - name: Install IPA Packages
+    yum:
+      name: "{{ item }}"
+      state: present
+    retries: 5
+    delay: 10
+    with_items:
+      - ipa-server
+      - ipa-server-dns
+      - git
+      - epel-release
+
+  - name: Check to see if IPA is already installed
+    stat:
+      path: /etc/ipa/default.conf
+    register: ipa_result
+
+  - name: Install Haveged Packages
+    yum:
+      name: "{{ item }}"
+      state: present
+    when: ipa_result.stat.exists == False
+    with_items:
+      - haveged
+
+  - name: start Haveged service
+    service:
+      name: haveged
+      enabled: yes
+      state: started
+    when: ipa_result.stat.exists == False
+
+  - name: Wait 1 Minute for Haveged to build some entropy
+    pause:
+      minutes: 1
+    when: ipa_result.stat.exists == False
+#  - name: Set Hostname and domain
+#    hostname:
+#      name: "{{ ansible_hostname }}.{{ domain }}"
+
+  - name: Fixing resolv.conf
+    shell: echo 'nameserver {{ ansible_default_ipv4.address }}'> /etc/resolv.conf
+    when: ipa_result.stat.exists == False
+
+  - name: Setup IPA Server
+    shell: ipa-server-install -r {{ domain | upper }} -n {{ domain }} -p {{ directory_admin_password }}  -U -a {{ kerberos_admin_password }} --ip-address {{ ansible_default_ipv4.address }} --hostname={{ ansible_hostname }}.{{ domain }} --setup-dns --forwarder=8.8.8.8 --forwarder=8.8.4.4
+    args:
+      creates: /etc/ipa/default.conf
+    when: ipa_result.stat.exists == False
+
+  - name: We don't need Haveged anymore
+    yum:
+      name: "{{ item }}"
+      state: absent
+    when: ipa_result.stat.exists == False
+    with_items:
+      - haveged
+
+
+  - name: Copy in ansible bind user template
+    template:
+      src: templates/search.ldif.j2
+      dest: /root/search.ldif
+      owner: root
+      group: root
+
+  - name: Adding Bind user
+    shell: ldapmodify -h localhost -p 389 -x -D "cn=Directory Manager" -w '{{ directory_admin_password }}' -f /root/search.ldif
+    ignore_errors: yes
+
+  - name: Install Ansible Packages
+    yum:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - http://mirror.centos.org/centos/7/paas/x86_64/openshift-origin/common/ansible-2.2.0.0-1.el7.noarch.rpm
+
+  - name: Copy in ansible hosts template
+    template:
+      src: files/ansible_hosts.complete
+      dest: /etc/ansible/hosts
+      owner: root
+      group: root
+
+  - name: Copy in /etc/hosts template
+    template:
+      src: files/hosts.complete
+      dest: /etc/hosts
+      owner: root
+      group: root
+
+  - name: Copy in Remote Playbooks
+    template:
+      src: remote_ansible/env_prep.yaml.j2
+      dest: /home/{{ instance_login }}/env_prep.yaml
+      owner: "{{ instance_login }}"
+      group: "{{ instance_login }}"
+
+  - name: Copy in Remote Playbooks
+    template:
+      src: remote_ansible/remote_install.yaml
+      dest: /home/{{ instance_login }}/remote_install.yaml
+      owner: "{{ instance_login }}"
+      group: "{{ instance_login }}"
+
+
+  - name: Copy in SSH Key
+    copy:
+      src: ../ssh/{{ item }}
+      dest: /home/{{ instance_login }}/.ssh/{{ item }}
+      owner: "{{ instance_login }}"
+      group: "{{ instance_login }}"
+      mode: 0400
+    with_items:
+      - id_rsa
+      - id_rsa.pub
+      - config
+
+  - name: Check to see if IPA is already installed
+    stat:
+      path: /home/{{ instance_login }}/openshift-ansible
+    register: git_result
+
+  - name: Cloning Openshift
+    shell: /usr/bin/git clone -b release-{{ openshift_version }} https://github.com/openshift/openshift-ansible.git /home/{{ instance_login }}/openshift-ansible
+    when: git_result.stat.exists == False
+
+  - name: Provisioning Openshift -This is going to take some time, get a cup of coffee!
+    shell: /usr/bin/ansible-playbook remote_install.yaml
+    register: openshift_results
+
+  - name: This is how it went
+    debug:
+      var: openshift_results
+#- hosts: localhost
+#  gather_facts: no
+#  tasks:
+
+#  - name: Gather facts from Openstack
+#    os_server_facts:
+#      cloud: openshift
+#      server: bastion-host
+#    register: os_bastion_host
+
+
+#  - name: Open a new shell and run Openshift install from bastion-host
+#    shell: /usr/bin/gnome-terminal -x $SHELL -ic "ssh {{ instance_login }}@{{ os_bastion_host.ansible_facts.openstack_servers.0.public_v4 }} /usr/bin/ansible-playbook remote_install.yaml ;bash"
