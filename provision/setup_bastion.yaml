@@ -180,6 +180,8 @@
   - name: Provisioning Openshift -This is going to take some time, get a cup of coffee!
     shell: /usr/bin/ansible-playbook remote_install.yaml
     register: openshift_results
+    retries: 3
+    delay: 10
 
   - name: This is how it went
     debug:

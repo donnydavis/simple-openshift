@@ -14,4 +14,9 @@ To deprovision things are pretty simple
     ansible-playbook delete.yaml
 
 
-All of the variables are in the group_vars folder, there is only one file and its pretty self explanatory. 
+All of the variables are in the group_vars folder, there is only one file and its pretty self explanatory.
+
+If the last task fails for any reason, you should can run the whole playbook again or you can ssh into your bastion-host and run
+    ansible-playbook remote_install.yaml
+
+This will just try to do the openshift part of the install
