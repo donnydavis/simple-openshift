@@ -16,8 +16,7 @@ To deprovision things are pretty simple
 
 All of the variables are in the group_vars folder, there is only one file and its pretty self explanatory.
 
-If the last task fails for any reason, you should can run the whole playbook again or you can ssh into your bastion-host and run
-
+The last step uses gnome-terminal, if you are on a mac or don't have gnome-terminal installed then just ssh into the bastion host and run
     ansible-playbook remote_install.yaml
 
 This will just try to do the openshift part of the install

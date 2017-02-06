@@ -177,25 +177,26 @@
     shell: /usr/bin/git clone -b release-{{ openshift_version }} https://github.com/openshift/openshift-ansible.git /home/{{ instance_login }}/openshift-ansible
     when: git_result.stat.exists == False
 
-  - name: Provisioning Openshift -This is going to take some time, get a cup of coffee!
-    shell: /usr/bin/ansible-playbook remote_install.yaml
-    register: openshift_results
-    retries: 3
-    delay: 10
+#  - name: Provisioning Openshift -This is going to take some time, get a cup of coffee!
+#    shell: /usr/bin/ansible-playbook remote_install.yaml
+#    register: openshift_results
+#    retries: 3
+#    delay: 10
 
-  - name: This is how it went
-    debug:
+#  - name: This is how it went
+#    debug:
       var: openshift_results
-#- hosts: localhost
-#  gather_facts: no
-#  tasks:
 
-#  - name: Gather facts from Openstack
-#    os_server_facts:
-#      cloud: openshift
-#      server: bastion-host
-#    register: os_bastion_host
+- hosts: localhost
+  gather_facts: no
+  tasks:
+
+  - name: Gather facts from Openstack
+    os_server_facts:
+      cloud: openshift
+      server: bastion-host
+    register: os_bastion_host
 
 
-#  - name: Open a new shell and run Openshift install from bastion-host
-#    shell: /usr/bin/gnome-terminal -x $SHELL -ic "ssh {{ instance_login }}@{{ os_bastion_host.ansible_facts.openstack_servers.0.public_v4 }} /usr/bin/ansible-playbook remote_install.yaml ;bash"
+  - name: Open a new shell and run Openshift install from bastion-host
+    shell: /usr/bin/gnome-terminal -x $SHELL -ic "ssh {{ instance_login }}@{{ os_bastion_host.ansible_facts.openstack_servers.0.public_v4 }} /usr/bin/ansible-playbook remote_install.yaml ;bash"
